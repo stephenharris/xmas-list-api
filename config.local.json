@@ -1,0 +1,6 @@
+{
+    "region": "local",
+    "endpoint": "http://listsdb:8000",
+    "accessKeyId": "foo",
+    "secretAccessKey": "bar"
+}

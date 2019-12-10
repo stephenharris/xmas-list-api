@@ -1,0 +1,23 @@
+version: "3.1"
+
+services:
+    testapp:
+        container_name: lists
+        hostname: lists
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - "3001:3000"
+        volumes:
+            - .:/home/node
+            - /home/node/node_modules
+        working_dir: /home/node
+
+    dynamodb:
+        container_name: listsdb
+        hostname: listsdb
+        image: amazon/dynamodb-local:latest
+        restart: unless-stopped
+        ports:
+            - 8000:8000

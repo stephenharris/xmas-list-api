@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "es2015",
+    "sourceMap": true,
+    "outDir": ".build",
+    "baseUrl": "./",
+  },
+  "exclude": ["node_modules", "dist"]
+}
+
+
+/*{"compilerOptions": {
+  "preserveConstEnums": true,
+  "strictNullChecks": true,
+  "allowJs": true
+  "moduleResolution": "node",
+  "lib": [
+    "es2015"
+  ],
+  "rootDir": "./"
+}
+*/

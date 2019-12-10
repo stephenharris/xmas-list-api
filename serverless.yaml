@@ -1,0 +1,58 @@
+service:
+  name: xmas-list-api
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-plugin-optimize
+  - serverless-offline
+  - serverless-plugin-warmup
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: testing
+  region: eu-west-2
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - {"Fn::GetAtt": ["XmasListDynamoDBTable", "Arn" ]}
+  environment:
+    USERS_TABLE: XmasList
+
+functions:
+  xmas-list-api:
+    handler: src/lambda.handler
+    events:
+      - http:
+          path: /{any+}
+          method: ANY
+
+resources:
+  Resources:
+    XmasListDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: pk
+            AttributeType: S
+          - AttributeName: sk
+            AttributeType: S
+        KeySchema:
+          - AttributeName: pk
+            KeyType: HASH
+          - AttributeName: sk
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: XmasList
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
