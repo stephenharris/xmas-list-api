@@ -40,7 +40,10 @@ export class LoginController {
   confirmEmail(@Body() body) {
     
     try {
-        return this.authService.sendEmailConfirmation(body.email);
+        return this.authService.sendEmailConfirmation(body.email)
+        .then(() => {
+          return { "success": true };
+        });
     } catch (error) {
         console.log("error", error);
         throw error;   
