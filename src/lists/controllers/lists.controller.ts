@@ -1,8 +1,8 @@
 import { Controller, Get, Query, Post, Body, Put, Param, Delete, HttpCode, UseGuards } from '@nestjs/common';
-import { ItemService } from './items.service';
+import { ItemService } from '../services/items.service';
 import { BadRequestException, ForbiddenException, UnauthorizedException} from '@nestjs/common';
-import {User} from '../user.dectorator';
-import { AuthGuard } from '../auth.guard';
+import {User} from '../../user.dectorator';
+import { AuthGuard } from '../../auth.guard';
 
 @Controller()
 @UseGuards(AuthGuard)

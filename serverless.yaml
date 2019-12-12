@@ -6,6 +6,7 @@ plugins:
   - serverless-plugin-optimize
   - serverless-offline
   - serverless-plugin-warmup
+  - serverless-dotenv-plugin
 
 provider:
   name: aws
@@ -23,8 +24,11 @@ provider:
         - dynamodb:DeleteItem
       Resource:
         - {"Fn::GetAtt": ["XmasListDynamoDBTable", "Arn" ]}
-  environment:
-    USERS_TABLE: XmasList
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource:
+        - arn:aws:secretsmanager:eu-west-2:436235769111:secret:XmasApiSecrets-PJDexS
 
 functions:
   xmas-list-api:

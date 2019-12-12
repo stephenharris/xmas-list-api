@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { ItemService } from '../lists/items.service';
 import { EmailService } from '../email.service';
 import {OAuth2Client} from 'google-auth-library';
-import { SecretsStore } from 'src/secrets/SecretsStore';
+import { ItemService } from '../lists/services/items.service';
+import { ConfigService } from '../config/services/config.service';
 
 var jwt = require('jsonwebtoken');
 
 @Injectable()
 export class AuthService {
     
-    constructor(private readonly itemService: ItemService, private secretsStore: SecretsStore, private emailService: EmailService) {
+    constructor(private readonly itemService: ItemService, private config: ConfigService, private emailService: EmailService) {
     }
 
     private async createToken(user) {
@@ -21,7 +21,7 @@ export class AuthService {
 
         let token = jwt.sign(
             { list: listId, email: user },
-            await this.secretsStore.get('SECRET'),
+            await this.config.get('SECRET'),
             {
                 expiresIn: '24 days'
             }
@@ -32,7 +32,7 @@ export class AuthService {
 
     public async authenticateToken(token) {;
         try {
-            var decoded = jwt.verify(token, await this.secretsStore.get('SECRET'));
+            var decoded = jwt.verify(token, await this.config.get('SECRET'));
             //TODO check if list ID exists
             return decoded;
         } catch(err) {
@@ -43,30 +43,28 @@ export class AuthService {
     }
 
     public async sendEmailConfirmation(email) {
-        console.log(`[login by email] ${email}`);
-        
-        console.log(await this.secretsStore.get('SECRET'));
         let token = jwt.sign(
             { email: email },
-            await this.secretsStore.get('SECRET'),
+            await this.config.get('SECRET'),
             {
                 expiresIn: '15 minutes'
             }
         );
         
-        this.emailService.sendEmail(email, `Click this link: ${token}`).catch((error) =>{
-            console.log(error);
-        });
-
-        return {
-            'token': token
-        }
+        return this.emailService.sendEmail(email, `Click this link: ${token}`)
+            .then(()=>{
+                return {
+                    'token': token
+                }
+            })
+            .catch((error) =>{
+                console.log(error);
+            });
     }
 
     public async confirmEmail(token) {
         try {
-            var decoded = jwt.verify(token, await this.secretsStore.get('SECRET'));
-            console.log(decoded);
+            var decoded = jwt.verify(token, await this.config.get('SECRET'));
             return this.createToken(decoded.email);
         } catch(err) {
             console.log(`[login by email failed]` + err.message);
@@ -76,7 +74,7 @@ export class AuthService {
     }
 
     public async authenticateWithGoogle(googleToken) {
-        const googleCLientId = await this.secretsStore.get('GOOGLE_CLIENT_ID');
+        const googleCLientId = await this.config.get('GOOGLE_CLIENT_ID');
         const client = new OAuth2Client(googleCLientId);
         
         return client.verifyIdToken({

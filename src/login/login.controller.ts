@@ -14,7 +14,6 @@ export class LoginController {
         let token = null;
         switch (body.strategy) {
           case 'google':
-            console.log('log-in with google');
             token = await this.authService.authenticateWithGoogle(body.token);
             break;
           case 'email':

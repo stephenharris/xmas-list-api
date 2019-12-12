@@ -7,10 +7,10 @@
     "experimentalDecorators": true,
     "target": "es2015",
     "sourceMap": true,
-    "outDir": ".build",
+    "outDir": "dist",
     "baseUrl": "./",
   },
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist"],
 }
 
 

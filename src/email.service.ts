@@ -10,15 +10,21 @@ export class EmailService {
     public async sendEmail(recipient, message) {
 
         console.log(`Send email to ${recipient}`);
-        let info = await this.smtpClient.sendMail({
-            from: '"Fred Foo 👻" <foo@example.com>', // sender address
+        return this.smtpClient.sendMail({
+            from: '"Father Christmas 🎅" <no-reply@example.com>', // sender address
             to: recipient,
             subject:'Confirm your email',
             //text: "message", // plain text body
             html: message // html body
-        });
+        })
+        .then((info) => {
+            console.log(`Message sent: ${info.messageId} ${info.response}`);
+        })
+        .catch((error) => {
+            console.log("Error sending email:", error);
+        })
         
-        console.log("Message sent: %s %s", info.messageId, info.response);
+
     }
 
 }

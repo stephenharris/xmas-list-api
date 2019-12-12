@@ -1,6 +1,8 @@
-import {SecretsStore} from './SecretsStore';
+import {SecretsStore} from './secrets-store.service';
+import { Injectable } from '@nestjs/common';
 const AWS = require('aws-sdk');
 
+@Injectable()
 export class AWSSecretsStore extends SecretsStore {
 
     private client;
@@ -9,11 +11,9 @@ export class AWSSecretsStore extends SecretsStore {
 
     constructor() {
         super();
-        AWS.config.loadFromPath('./config.production.json');
         this.client = new AWS.SecretsManager({
             region: 'eu-west-2',
         });
-
 
     }
 

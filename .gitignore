@@ -41,13 +41,9 @@ lerna-debug.log*
 .config
 
 # Configs
-*.env*
-!.env.dist
+*.env
 config.*.json
 !config.local.json
 
 # Credentials
 .aws
-
-# Build files
-.build

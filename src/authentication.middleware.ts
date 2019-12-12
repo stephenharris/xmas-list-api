@@ -18,7 +18,6 @@ export class AuthenticationMiddleware implements NestMiddleware {
         next();
       })
       .catch((err) => {
-        //console.log(err);
         //fail silently
         next();
       })
