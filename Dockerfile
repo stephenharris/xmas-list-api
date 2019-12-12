@@ -19,8 +19,6 @@ WORKDIR /home/node
 USER node
 COPY package.* /home/node/
 
-ENV APPLICATION_ENV=development
-
 RUN npm install
 
 # start app
