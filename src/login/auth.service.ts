@@ -42,16 +42,26 @@ export class AuthService {
         }
     }
 
-    public async sendEmailConfirmation(email) {
-        let token = jwt.sign(
+    public async sendEmailConfirmation(email, redirect='/') {
+        const token = jwt.sign(
             { email: email },
             await this.config.get('SECRET'),
             {
                 expiresIn: '15 minutes'
             }
         );
+
+        const url = await this.config.get('APPLICATION_URL');
         
-        return this.emailService.sendEmail(email, `Click this link: ${token}`)
+        return this.emailService.sendEmail(email, 
+            `
+            To confirm your email please click the following url:<br/><br/>
+            <a href="${url}/login/${token}?redirect=${redirect}">${url}/login/${token}?redirect=${redirect}</a>
+            <br/><br/>
+            Merry Christmas!<br/>
+            🎄🎄🎄
+            `
+            )
             .then(()=>{
                 return {
                     'token': token
