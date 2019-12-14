@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Post, Body, Put, Param, Delete, HttpCode, UseGuards } from '@nestjs/common';
 import { ItemService } from '../services/items.service';
-import { BadRequestException, ForbiddenException, UnauthorizedException} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException} from '@nestjs/common';
 import {User} from '../../user.dectorator';
 import { AuthGuard } from '../../auth.guard';
 
@@ -69,6 +69,13 @@ export class ListItemsController {
 
     try {
         return this.itemService.getList(listUuid).then(items => {
+
+          if(items.length === 0) {
+            throw new NotFoundException({
+              "message": "List could not be found",
+              "code": "listNotFound"
+            });
+          }
 
           return {
             items: items.map((item) => {
