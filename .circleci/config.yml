@@ -14,8 +14,9 @@ jobs:
           - v1-dependencies-
 
       - run:
-          name: Install Serverless CLI and dependencies
+          name: Install dependencies
           command: |
+            # serverless-plugin-optimize/.git was causing problems for npm install 
             rm -rf node_modules/serverless-plugin-optimize/.git
             npm install
 
@@ -31,4 +32,6 @@ jobs:
 
       - run:
           name: Deploy application
-          command: npm run deploy:prod
+          command: |
+            echo "APPLICATION_VER=${CIRCLE_SHA1:0:7}" >> .env 
+            npm run deploy:prod

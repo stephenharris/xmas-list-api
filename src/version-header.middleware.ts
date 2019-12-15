@@ -5,7 +5,7 @@ import { Request, Response } from 'express';
 export class VersionHeader implements NestMiddleware {
   use(request: Request, response: Response, next: () => void) {
     response.set('X-Env', process.env.APPLICATION_ENV);
-    response.set('X-Ver', process.env.npm_package_version);
+    response.set('X-Ver', process.env.APPLICATION_VER);
     next();
   }
 }
