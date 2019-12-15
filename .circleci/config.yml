@@ -33,5 +33,5 @@ jobs:
       - run:
           name: Deploy application
           command: |
-            echo "APPLICATION_VER=${CIRCLE_SHA1:0:7}" >> .env 
+            echo "APPLICATION_VER=${CIRCLE_SHA1:0:7}-${CIRCLE_BUILD_NUM}" >> .env.production
             npm run deploy:prod
