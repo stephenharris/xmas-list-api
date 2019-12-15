@@ -16,6 +16,7 @@ jobs:
       - run:
           name: Install Serverless CLI and dependencies
           command: |
+            rm -rf node_modules/serverless-plugin-optimize/.git
             npm install
 
       - save_cache:
