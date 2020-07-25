@@ -60,6 +60,17 @@ export class ListItemsController {
     }
   }
 
+  @Put('list-item/mine')
+  @HttpCode(200)
+  async updateList(@Body() body, @User() user: any) {
+    try {
+      return this.itemService.updateListMeta(user, body);
+    } catch (error) {
+        console.log("error", error);
+        throw error;   
+    }
+  }
+
   @Get('list-item/:listUuid')
   @HttpCode(200)
   async getList(@Param('listUuid') listUuid: string, @User() userUuid) {

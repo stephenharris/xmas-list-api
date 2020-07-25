@@ -221,6 +221,21 @@ export class ItemService {
             })
     }
 
+    public async updateListMeta(listUuid, meta) {
+        // Store list name
+        await this.ddb.put({
+            TableName: "XmasList",
+            Item: {
+                "pk": listUuid ,
+                "sk": "Name",
+                "name": meta.name
+            },
+        }).promise().then().catch((error) => {
+            console.log(error);
+            throw new Error('naming list failed'); 
+        });
+    }
+
     public async getListId(userEmail) {
         var params = {
             TableName: "XmasList",
