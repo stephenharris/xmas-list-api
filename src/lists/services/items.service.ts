@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { uuid } from 'uuidv4';
-import { ConfigService } from 'src/config/services/config.service';
+import { ConfigService } from '../../config/services/config.service';
 @Injectable()
 export class ItemService {
 
