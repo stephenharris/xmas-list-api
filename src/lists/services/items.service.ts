@@ -249,6 +249,55 @@ export class ItemService {
         return response.Item ? response.Item.uuid : null;
     }
 
+    public async saveList(listUuid, userUuid) {
+        //let timestamp  = Math.floor((new Date()).getTime()/ 1000);
+        var params = {
+            TableName: "XmasList",
+            Item: {
+                "pk": userUuid+"_favourites",
+                "sk": listUuid
+            }
+        };
+
+        console.log(`${userUuid} saved list ${listUuid}`);
+        
+        await this.ddb.put(params).promise();
+
+        return true;
+    }
+
+    public getFavourites(userUuid) {
+        var params = {
+            TableName : "XmasList",
+            KeyConditionExpression : "pk = :userUuid",
+            ExpressionAttributeValues : {
+                ':userUuid' : userUuid+"_favourites"
+            }
+        };
+
+        return this.ddb.query(params).promise().then((response) => {
+            return response.Items.map((item) => {
+                return {
+                    'uuid': item.sk,
+                }
+            });
+        });
+    }
+
+    public async removeFromFavourites(listUuid, userUuid) {
+        var params = {
+            TableName: "XmasList",
+            Key: {
+                "pk": userUuid+"_favourites",
+                "sk": listUuid
+            }
+        };
+
+        console.log(`${userUuid} unfavourited ${listUuid}`);
+        
+        await this.ddb.delete(params).promise();
+    }
+
     private hashEmail(email) {
         let md5hash = createHash('md5');
         md5hash.update(email);
