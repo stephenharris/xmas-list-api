@@ -44,12 +44,13 @@ export class ListItemsController {
   @HttpCode(200)
   async getMyList(@User() user: any) {
     try {
-      return this.itemService.getList(user).then(items => {
+      return this.itemService.getList(user).then(list => {
         return {
-          items: items.map((item) => {
+          items: list.items ? list.items.map((item) => {
             delete item['boughtBy'];
             return item;
-          }),
+          }): [],
+          name: list.name,
           listId: user
         }
       });
@@ -68,9 +69,9 @@ export class ListItemsController {
     }
 
     try {
-        return this.itemService.getList(listUuid).then(items => {
+        return this.itemService.getList(listUuid).then(list => {
 
-          if(items.length === 0) {
+          if(!list) {
             throw new NotFoundException({
               "message": "List could not be found",
               "code": "listNotFound"
@@ -78,7 +79,7 @@ export class ListItemsController {
           }
 
           return {
-            items: items.map((item) => {
+            items: list.items.map((item) => {
               let boughtBy = null;
               if(item['boughtBy']) {
                 boughtBy = (item['boughtBy'] === userUuid ? 'you' : 'someonelse');
@@ -87,7 +88,7 @@ export class ListItemsController {
               return item;
             }),
             listId: listUuid,
-            name: "Bob"
+            name: list.name
           }
         });
     } catch (error) {

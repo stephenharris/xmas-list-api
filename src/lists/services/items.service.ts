@@ -89,7 +89,7 @@ export class ItemService {
     }
 
 
-    public getList(userUuid) {
+    public async getList(userUuid) {
         var params = {
             TableName : "XmasList",
             KeyConditionExpression : "pk = :userUuid and begins_with(sk,:listItem)",
@@ -98,8 +98,7 @@ export class ItemService {
                 ':listItem': 'ListItem'
             }
         };
-
-        return this.ddb.query(params).promise().then((response) => {
+        let items = await this.ddb.query(params).promise().then((response) => {
             return response.Items.map((item) => {
                 return {
                     'id': item.sk.substr(8),
@@ -108,6 +107,22 @@ export class ItemService {
                 }
             });
         });
+    
+        var nameParams = {
+            TableName: "XmasList",
+            Key: {
+                "pk": userUuid,
+                "sk": "Name"
+            }
+        };
+
+        let response = await this.ddb.get(nameParams).promise();
+        let name = response?.Item?.name;
+
+        return {
+            name: name,
+            items: items
+        }
     }
 
     private listExists(listId) {
@@ -161,6 +176,20 @@ export class ItemService {
         }).promise().then().catch((error) => {
             console.log(error);
             throw new Error('creatingListFailed'); 
+        });
+
+        // Store list name
+        await this.ddb.put({
+            TableName: "XmasList",
+            Item: {
+                "pk": listId ,
+                "sk": "Name",
+                "name": `${userEmail}'s list`
+            },
+            //ConditionExpression: 'attribute_not_exists(pk)'
+        }).promise().then().catch((error) => {
+            console.log(error);
+            throw new Error('naming list failed'); 
         });
 
         // Store mapping from user to list
