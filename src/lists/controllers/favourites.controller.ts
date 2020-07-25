@@ -57,6 +57,7 @@ export class FavouritesController {
   async asyncGetList(list) {
     let _list = await this.itemService.getList(list.uuid);
     list.name = _list.name;
+    list.url = _list.url;
     return list;
   }
 

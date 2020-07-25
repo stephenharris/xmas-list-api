@@ -1,10 +1,11 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { uuid } from 'uuidv4';
+import { ConfigService } from 'src/config/services/config.service';
 @Injectable()
 export class ItemService {
 
-    constructor(@Inject('DYNAMODB_CLIENT') private ddb) {
+    constructor(@Inject('DYNAMODB_CLIENT') private ddb, private config: ConfigService) {
     }
 
     public async addToList(itemDescription, userUuid) {
@@ -116,12 +117,15 @@ export class ItemService {
             }
         };
 
+        const url = await this.config.get('APPLICATION_URL');
         let response = await this.ddb.get(nameParams).promise();
         let name = response?.Item?.name;
 
         return {
             name: name,
-            items: items
+            items: items,
+            url: url + '/list/' + userUuid
+            
         }
     }
 
