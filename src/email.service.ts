@@ -11,7 +11,7 @@ export class EmailService {
 
         console.log(`Send email to ${recipient}`);
         return this.smtpClient.sendMail({
-            from: '"Father Christmas 🎅" <no-reply@example.com>', // sender address
+            from: '"Father Christmas 🎅" <no-reply@xmas.c7e.uk>', // sender address
             to: recipient,
             subject:'Confirm your email',
             //text: "message", // plain text body
