@@ -12,15 +12,11 @@ export class AuthService {
     constructor(private readonly itemService: ItemService, private config: ConfigService, private emailService: EmailService) {
     }
 
-    private async createToken(user) {
-        let listId = await this.itemService.getListId(user);
+    private async createToken(email) {
 
-        if (!listId) {
-            listId = await this.itemService.createListId(user);
-        }
-
+        let listId = await this.getOrCreateListId(email);
         let token = jwt.sign(
-            { list: listId, email: user },
+            { list: listId, email: email },
             await this.config.get('SECRET'),
             {
                 expiresIn: '24 days'
@@ -28,6 +24,16 @@ export class AuthService {
         );
 
         return token;
+    }
+
+    private async getOrCreateListId(email) {
+        let listId = await this.itemService.getListId(email);
+
+        if (!listId) {
+            listId = await this.itemService.createListId(email);
+        }
+
+        return listId;
     }
 
     public async authenticateToken(token) {;
@@ -38,7 +44,18 @@ export class AuthService {
         } catch(err) {
             console.log('[authentication failed] ' + err.message);
             console.log(err);
-            return null;
+            console.log('Trying with Auth0');
+            try {
+                var decoded = jwt.verify(token, await this.config.get('AUTH0_SECRET'));
+                let email = decoded['https://xmas.c7e.uk/email']
+                let listId = await this.getOrCreateListId(email);
+                
+                return { list: listId, email: email }
+            } catch(err) {
+                console.log('[authentication failed] ' + err.message);
+                console.log(err);
+                return null;
+            }
         }
     }
 
