@@ -46,6 +46,8 @@ export class AuthService {
             console.log(err);
             console.log('Trying with Auth0');
             try {
+                console.log(token);
+                console.log(this.config.get('AUTH0_SECRET'));
                 var decoded = jwt.verify(token, await this.config.get('AUTH0_SECRET'));
                 let email = decoded['https://xmas.c7e.uk/email']
                 let listId = await this.getOrCreateListId(email);
