@@ -2,7 +2,6 @@ import { Module, NestModule, MiddlewareConsumer} from '@nestjs/common';
 import { LoggerMiddleware } from './logger.middleware';
 import { VersionHeader } from './version-header.middleware';
 import { AuthenticationMiddleware } from './authentication.middleware';
-import { LoginController } from './login/login.controller';
 import { AuthService } from './login/auth.service';
 import { EmailService } from './email.service';
 import { ConfigModule } from './config/config.module';
@@ -31,7 +30,7 @@ const smtpClientFactory = {
 
 @Module({
   imports: [ListsModule, ConfigModule],
-  controllers: [LoginController],
+  controllers: [],
   providers: [
     AuthService,
     EmailService,
