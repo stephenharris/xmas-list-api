@@ -26,6 +26,12 @@ provider:
         - {"Fn::GetAtt": ["XmasListDynamoDBTable", "Arn" ]}
     - Effect: Allow
       Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+      Resource: 
+        - !Sub '${XmasListDynamoDBTable.Arn}/list_owner_index/*'
+    - Effect: Allow
+      Action:
         - secretsmanager:GetSecretValue
       Resource:
         - arn:aws:secretsmanager:eu-west-2:436235769111:secret:XmasApiSecrets-PJDexS
