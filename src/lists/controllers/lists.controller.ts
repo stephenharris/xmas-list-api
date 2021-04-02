@@ -6,81 +6,44 @@ import { AuthGuard } from '../../auth.guard';
 
 @Controller()
 @UseGuards(AuthGuard)
-export class ListItemsController {
+export class ListController {
 
   constructor(private readonly itemService: ItemService) {}
 
-  @Post('list-item')
+  // Lists
+  @Get('list')
   @HttpCode(200)
-  async createItem(@Body() body, @User() user: any) {
-    console.log(`${user} created item `, body);
+  async getLists(@User() userUuid) {
 
-    if(!body.description) {
-      throw new BadRequestException({
-        'error': 'emptyDescription',
-        'message': "Item description cannot be empty"
-      });
-    }
+    return this.itemService.getUsersLists(userUuid).then().catch((error) => {
+      console.log("error", error);
+      throw error;  
+    })
+  }
 
+  @Put('list/:listId/')
+  @HttpCode(200)
+  async updateList(@Param('listId') listId: string, @Body() body, @User() userUuid: any) {
     try {
-        let itemUuid = await this.itemService.addToList(body.description, user);
-        return {
-          'item': body.description,
-          'uuid': itemUuid
-        };
+      if(await this.itemService.userOwnsList(userUuid, listId)) {
+        return this.itemService.updateListMeta(listId, userUuid, body);
+      }
+
+      throw new ForbiddenException("You cannot update lists that are not your own");
+
     } catch (error) {
         console.log("error", error);
         throw error;   
     }
   }
 
-  @Delete('list-item/:uuid/')
-  @HttpCode(204)
-  async deleteItem(@Param('uuid') itemUuid: string, @User() user) {
-    await this.itemService.removeItemFromList(itemUuid, user);
-  }
-
-  @Get('list-item/mine')
+  @Get('list/:listId')
   @HttpCode(200)
-  async getMyList(@User() user: any) {
-    try {
-      return this.itemService.getList(user).then(list => {
-        return {
-          items: list.items ? list.items.map((item) => {
-            delete item['boughtBy'];
-            return item;
-          }): [],
-          name: list.name,
-          listId: user
-        }
-      });
-    } catch (error) {
-        console.log("error", error);
-        throw error;   
-    }
-  }
-
-  @Put('list-item/mine')
-  @HttpCode(200)
-  async updateList(@Body() body, @User() user: any) {
-    try {
-      return this.itemService.updateListMeta(user, body);
-    } catch (error) {
-        console.log("error", error);
-        throw error;   
-    }
-  }
-
-  @Get('list-item/:listUuid')
-  @HttpCode(200)
-  async getList(@Param('listUuid') listUuid: string, @User() userUuid) {
-
-    if(userUuid === listUuid) {
-      throw new ForbiddenException('You cannot get your own list');
-    }
+  async getList(@Param('listId') listId: string, @User() userUuid) {
 
     try {
-        return this.itemService.getList(listUuid).then(list => {
+        let ownsList = await this.itemService.userOwnsList(userUuid, listId);
+        return this.itemService.getList(listId).then(list => {
 
           if(!list) {
             throw new NotFoundException({
@@ -88,17 +51,19 @@ export class ListItemsController {
               "code": "listNotFound"
             });
           }
-
           return {
             items: list.items.map((item) => {
               let boughtBy = null;
               if(item['boughtBy']) {
-                boughtBy = (item['boughtBy'] === userUuid ? 'you' : 'someonelse');
+                boughtBy = (item['boughtBy'] === userUuid ? 'you' : 'someoneelse');
               }
               item['boughtBy'] = boughtBy;
+              if (ownsList) {
+                delete item['boughtBy'];
+              }
               return item;
             }),
-            listId: listUuid,
+            listId: listId,
             name: list.name
           }
         });
@@ -108,57 +73,47 @@ export class ListItemsController {
     }
   }
 
-  @Post('mark-item/:listUuid/:itemUuid')
+  @Post('list')
   @HttpCode(200)
-  async updateItem(@Param('listUuid') listUuid: string, @Param('itemUuid') itemUuid: string, @User() userUuid) {
-
-    if(userUuid === listUuid) {
-      throw new ForbiddenException('You cannot mark items on your own list');
-    }
-
-    return this.itemService.markItemAsBought(listUuid, itemUuid, userUuid)
-    .then((item) => {
-      return item;
-    })
-    .catch((error) => {
-      if(error.code === 'ConditionalCheckFailedException') {
-        throw new ForbiddenException({
-          'error': 'cannotMarkItem',
-          'message': "This item is already marked as bought"
-        }); 
-      } else {
-        throw error;
+  async createList(@Body() body, @User() userUuid: any) {
+    try {
+      
+      if(!body.name) {
+        throw new BadRequestException({
+          'error': 'emptyName',
+          'message': "A list name must be provided"
+        });
       }
-    });
-  }
+      return this.itemService.createList(userUuid, body.name)
+        .then((listId) => {
+          return {
+            id: listId,
+            name: body.name
+          }
+        })
 
-
-  @Delete('mark-item/:listUuid/:itemUuid')
-  @HttpCode(200)
-  async removeMarkItemAsBought(@Param('listUuid') listUuid: string, @Param('itemUuid') itemUuid: string, @User() userUuid) {
-    
-    if(userUuid === listUuid) {
-      throw new ForbiddenException('You cannot mark items on your own list');
+    } catch (error) {
+        console.log("error", error);
+        throw error;   
     }
-
-    return this.itemService.unmarkItemAsBought(listUuid, itemUuid, userUuid)
-      .then((item) => {
-        return item;
-      })
-      .catch((error) => {
-        if(error.code === 'ConditionalCheckFailedException') {
-          throw new ForbiddenException({
-            'error': 'cannotUnmarkItem',
-            'message': "This item is not marked as bought by you for you to unmark"
-          }); 
-        } else {
-          throw error;
-        }
-      });
-    //return item;
   }
 
+  @Delete('list/:listId')
+  @HttpCode(204)
+  async deleteList(@Param('listId') listId: string, @Body() body, @User() userUuid: any) {
+    try {
 
+      return this.itemService.userOwnsList(userUuid, listId)
+        .then((ownsList) => {
+          if(!ownsList) {
+            throw new ForbiddenException('You cannot delete this list');
+          }
+        })
+        .then(() => this.itemService.deleteList(userUuid, listId))
 
-
+    } catch (error) {
+        console.log("error", error);
+        throw error;   
+    }
+  }
 }

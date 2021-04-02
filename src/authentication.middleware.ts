@@ -13,8 +13,8 @@ export class AuthenticationMiddleware implements NestMiddleware {
     let authHeader = request.get('Authorization') || '';
     this.authService.authenticateToken(authHeader.replace("Bearer","").trim())
       .then((decoded) => {
-        response.locals.authorizedUser = decoded.list;
-        console.log(`logged in as ${decoded.list}`);
+        response.locals.authorizedUser = decoded.userUuid;
+        console.log(`logged in as ${decoded.userUuid}`);
         next();
       })
       .catch((err) => {
