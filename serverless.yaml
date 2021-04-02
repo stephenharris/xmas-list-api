@@ -22,14 +22,11 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource:
-        - {"Fn::GetAtt": ["XmasListDynamoDBTable", "Arn" ]}
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
       Resource: 
-        - !Sub '${XmasListDynamoDBTable.Arn}/list_owner_index/*'
+        Fn::Join: 
+          - ""
+          - - "Ref": "XmasListDynamoDBTable"
+            - "*"
     - Effect: Allow
       Action:
         - secretsmanager:GetSecretValue
