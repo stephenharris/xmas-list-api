@@ -1,5 +1,4 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { createHash } from 'crypto';
 import { uuid } from 'uuidv4';
 import { ConfigService } from '../../config/services/config.service';
 @Injectable()
@@ -8,20 +7,20 @@ export class ItemService {
     constructor(@Inject('DYNAMODB_CLIENT') private ddb, private config: ConfigService) {
     }
 
-    public async addToList(itemDescription, userUuid) {
+    public async addToList(itemDescription, listId) {
         let timestamp  = Math.floor((new Date()).getTime()/ 1000);
-        const itemUuid =  timestamp + '-' + uuid();
+        const itemUuid =  uuid() + '-' + timestamp
         var params = {
             TableName: "XmasList",
             Item: {
-                "pk": userUuid,
-                "sk": "ListItem" + itemUuid,
+                "pk": "list:" + listId,
+                "sk": "item:" + itemUuid,
                 "item": itemDescription,
-                "ttl": timestamp + 15768000, //expires in 6 months
+                //"ttl": timestamp + 15768000, //expires in 6 months
             }
         };
 
-        console.log(`${userUuid} added ${itemUuid} to their list`);
+        console.log(`${itemUuid} added to list ${listId}`);
         
         await this.ddb.put(params).promise();
 
@@ -29,12 +28,12 @@ export class ItemService {
     }
 
 
-    public async markItemAsBought(userUuid, itemUuid, boughtBy) {
+    public async markItemAsBought(listId, itemUuid, boughtBy) {
         var params = {
             TableName: "XmasList",
             Key: {
-                "pk": userUuid,
-                "sk": "ListItem" + itemUuid,
+                "pk": "list:" + listId,
+                "sk": "item:" + itemUuid
             },
             UpdateExpression: 'set #boughtBy = :boughtBy',
             ConditionExpression: 'attribute_not_exists(#boughtBy) or #boughtBy = :null',
@@ -48,7 +47,7 @@ export class ItemService {
             ReturnValues: 'ALL_NEW'
         };
 
-        console.log(`${userUuid} marked ${itemUuid} as bought`);
+        console.log(`${itemUuid} marked as bought in list ${listId}`);
 
         return this.ddb.update(params).promise().then((response) => {
             return {
@@ -59,12 +58,12 @@ export class ItemService {
         });
     }
 
-    public async unmarkItemAsBought(userUuid, itemUuid, boughtBy) {
+    public async unmarkItemAsBought(listId, itemUuid, boughtBy) {
         var params = {
             TableName: "XmasList",
             Key: {
-                "pk": userUuid,
-                "sk": "ListItem" + itemUuid,
+                "pk": "list:" + listId,
+                "sk": "item:" + itemUuid
             },
             UpdateExpression: 'set #boughtBy = :null',
             ConditionExpression: '#boughtBy = :boughtBy',
@@ -78,7 +77,7 @@ export class ItemService {
             ReturnValues: 'ALL_NEW'
         };
 
-        console.log(`${userUuid} unmarked ${itemUuid} as bought`);
+        console.log(`${itemUuid} unmarked as bought in ${listId}`);
 
         return this.ddb.update(params).promise().then((response) => {
             return {
@@ -89,44 +88,49 @@ export class ItemService {
         });
     }
 
-
-    public async getList(userUuid) {
+    public async removeItemFromList(itemUuid, listId) {
         var params = {
-            TableName : "XmasList",
-            KeyConditionExpression : "pk = :userUuid and begins_with(sk,:listItem)",
-            ExpressionAttributeValues : {
-                ':userUuid' : userUuid,
-                ':listItem': 'ListItem'
-            }
-        };
-        let items = await this.ddb.query(params).promise().then((response) => {
-            return response.Items.map((item) => {
-                return {
-                    'id': item.sk.substr(8),
-                    'description': item.item,
-                    'boughtBy': item.boughtBy ? item.boughtBy : null
-                }
-            });
-        });
-    
-        var nameParams = {
             TableName: "XmasList",
             Key: {
-                "pk": userUuid,
-                "sk": "Name"
+                "pk": "list:" + listId,
+                "sk": "item:" + itemUuid
             }
         };
 
-        const url = await this.config.get('APPLICATION_URL');
-        let response = await this.ddb.get(nameParams).promise();
-        let name = response?.Item?.name;
+        console.log(`${itemUuid} removed form list ${listId}`);
+        
+        await this.ddb.delete(params).promise();
+    }
 
-        return {
-            name: name,
-            items: items,
-            url: url + '/list/' + userUuid
-            
-        }
+
+    public async getList(listId) {
+        var params = {
+            TableName : "XmasList",
+            KeyConditionExpression : "pk = :listId",
+            ExpressionAttributeValues : {
+                ':listId' : "list:"+listId
+            }
+        };
+        let list = await this.ddb.query(params).promise().then((response) => {
+            return response.Items
+                .reduce((list, item) => {
+                    if (item.name) {
+                        list.name = item.name
+                        list.owner = item.sk.substr(6)
+                    } else {
+                        list.items.push({
+                            'id': item.sk.substr(5), //remove item: prefix
+                            'description': item.item,
+                            'boughtBy': item.boughtBy ? item.boughtBy : null
+                        })
+                    }
+                    return list;
+                }, {"name":"", items: [], owner: ""});
+            });
+
+        const url = await this.config.get('APPLICATION_URL');
+        list.url = url + '/list/' + listId;
+        return list;
     }
 
     private listExists(listId) {
@@ -134,7 +138,7 @@ export class ItemService {
             TableName : "XmasList",
             KeyConditionExpression : "pk = :listId",
             ExpressionAttributeValues : {
-                ':listId' : listId
+                ':listId' : "list:"+listId
             }
         };
 
@@ -146,111 +150,170 @@ export class ItemService {
         });
     }
 
+    public async getOrCreateUserId(userEmail) {
+     
+        try {
+            return await this.getUserId(userEmail);
+        } catch(error) {
+            return await this.createUserId(userEmail)
+        }
+    }
 
-    public async removeItemFromList(itemUuid, userUuid) {
+    public userOwnsList(userUuid, listId) {
         var params = {
-            TableName: "XmasList",
+            TableName : "XmasList",
             Key: {
-                "pk": userUuid,
-                "sk": "ListItem" + itemUuid
+                "pk": `list:${listId}`,
+                "sk": `owner:${userUuid}`
             }
         };
 
-        console.log(`${userUuid} removed ${itemUuid} from their list`);
+        console.log(`Does ${userUuid} own ${listId}?`)
         
-        await this.ddb.delete(params).promise();
+        return this.ddb.get(params).promise()
+            .then((resp) => {
+                console.log(params);
+                console.log("is owned")
+                console.log(resp)
+                console.log(!! resp?.Item)
+                return !! resp?.Item;
+            })
+            .catch(() => false);
     }
 
-
-    public async createListId(userEmail) {
-        
-        //Generate list
-        const listId = await this.generateListId();
+    private async createUserId(userEmail) {
         let timestamp  = Math.floor((new Date()).getTime()/ 1000);
-        
-        // Store list ID
-        await this.ddb.put({
+        const userUuid = uuid() + '-' + timestamp
+       
+        return this.ddb.put({
             TableName: "XmasList",
             Item: {
-                "pk": listId ,
-                "sk": "ListId",
-                "ttl": timestamp + 15768000, //expires in 6 months
+                "pk": "user:" + userEmail ,
+                "sk": "UserId",
+                "uuid": userUuid
             },
             ConditionExpression: 'attribute_not_exists(pk)'
-        }).promise().then().catch((error) => {
+        })
+        .promise()
+        .then(() => this.createList(userUuid, `${userEmail}'s list`))
+        .then(() => userUuid)
+        .catch((error) => {
             console.log(error);
             throw new Error('creatingListFailed'); 
         });
+    }
 
-        // Store list name
-        await this.ddb.put({
-            TableName: "XmasList",
-            Item: {
-                "pk": listId ,
-                "sk": "Name",
-                "name": `${userEmail}'s list`
-            },
-            //ConditionExpression: 'attribute_not_exists(pk)'
-        }).promise().then().catch((error) => {
-            console.log(error);
-            throw new Error('naming list failed'); 
-        });
-
-        // Store mapping from user to list
-        const params = {
-            TableName: "XmasList",
-            Item: {
-                "pk": userEmail,
-                "sk": "ListId",
-                "uuid": listId,
-                "ttl": timestamp + 15768000, //expires in 6 months
-            },
-            ConditionExpression: 'attribute_not_exists(pk)'
+    public async getUserId(userEmail) {
+        var params = {
+            TableName : "XmasList",
+            Key: {
+                "pk": "user:" + userEmail,
+                "sk": "UserId"
+            }
         };
-
-        return this.ddb.put(params).promise()
-            .then((item) => {
-                let hashedEmail = this.hashEmail(userEmail);
-                console.log(`${hashedEmail} created list Id ${listId}`);
-                return listId;
+        
+        let userId = await this.ddb.get(params).promise()
+            .then((response) => {
+                return response.Item?.uuid;
             })
             .catch((error) => {
-                if ('ConditionalCheckFailedException' === error.code) {
-                    return this.getListId(userEmail);
-                } else {
-                    console.log(error);
-                    throw new Error('creatingListFailed');
-                }
+                throw new Error('Failed to find user'); 
+            });
 
-            })
+        if (!userId) {
+            throw new Error('User not found'); 
+        }
+
+        return userId;
     }
 
-    public async updateListMeta(listUuid, meta) {
-        // Store list name
-        await this.ddb.put({
+
+    public async createList(userUuid, name) {
+
+        //Generate list
+        const listId = await this.generateListId();
+        //let timestamp  = Math.floor((new Date()).getTime()/ 1000);
+        
+        // Store list ID
+        return this.ddb.put({
             TableName: "XmasList",
             Item: {
-                "pk": listUuid ,
-                "sk": "Name",
-                "name": meta.name
+                "pk": "list:" + listId ,
+                "sk": "owner:" + userUuid,
+                "name": name,
+                "uuid": listId
+                //"ttl": timestamp + 15768000, //expires in 6 months
             },
-        }).promise().then().catch((error) => {
+            ConditionExpression: 'attribute_not_exists(pk)'
+        })
+        .promise()
+        .then(() => listId)
+        .catch((error) => {
             console.log(error);
-            throw new Error('naming list failed'); 
+            throw new Error('creatingListFailed'); 
         });
     }
 
-    public async getListId(userEmail) {
+    public deleteList(userUuid, listId) {
+
         var params = {
             TableName: "XmasList",
             Key: {
-                "pk": userEmail,
-                "sk": "ListId"
+                "pk": "list:" + listId,
+                "sk": "owner:" + userUuid
+            }
+        };
+        //TODO delete list items
+        console.log(`${userUuid} deleted ${listId}`);
+        
+        return this.ddb.delete(params).promise();
+    }
+
+    /**
+     * Upate the name of the given list
+     * 
+     * @param listUuid The list UUID
+     * @param userUuid The owner of the list UUID
+     * @param meta object containing metadata (primarily name)
+     */
+    public async updateListMeta(listUuid, userUuid, meta) {
+        await this.ddb.put({
+            TableName: "XmasList",
+            Item: {
+                "pk": "list:" + listUuid ,
+                "sk": "owner:" + userUuid,
+                "name": meta.name,
+                "uuid": listUuid
+            },
+        }).promise().then().catch((error) => {
+            console.log(error);
+            throw new Error('naming list failed'); 
+        });
+    }
+
+    /**
+     * Return list Ids associated with an email address
+     * @param userEmail 
+     */
+    public async getUsersLists(userUuid) {
+
+        var params = {
+            TableName : "XmasList",
+            IndexName: 'list_owner_index',
+            KeyConditionExpression : "sk = :userUuid",
+            ExpressionAttributeValues : {
+                ':userUuid' : "owner:" + userUuid
             }
         };
 
-        let response = await this.ddb.get(params).promise();
-        return response.Item ? response.Item.uuid : null;
+        return this.ddb.query(params).promise().then((response) => {
+            return response.Items.map((list) => {
+                return {
+                    'id': list.uuid,
+                    'name': list.name,
+                }
+            });
+        });
     }
 
     public async saveList(listUuid, userUuid) {
@@ -258,7 +321,7 @@ export class ItemService {
         var params = {
             TableName: "XmasList",
             Item: {
-                "pk": userUuid+"_favourites",
+                "pk": "favouritelists:" + userUuid,
                 "sk": listUuid
             }
         };
@@ -275,7 +338,7 @@ export class ItemService {
             TableName : "XmasList",
             KeyConditionExpression : "pk = :userUuid",
             ExpressionAttributeValues : {
-                ':userUuid' : userUuid+"_favourites"
+                ':userUuid' : "favouritelists:" + userUuid
             }
         };
 
@@ -292,7 +355,7 @@ export class ItemService {
         var params = {
             TableName: "XmasList",
             Key: {
-                "pk": userUuid+"_favourites",
+                "pk": "favouritelists:" + userUuid,
                 "sk": listUuid
             }
         };
@@ -300,12 +363,6 @@ export class ItemService {
         console.log(`${userUuid} unfavourited ${listUuid}`);
         
         await this.ddb.delete(params).promise();
-    }
-
-    private hashEmail(email) {
-        let md5hash = createHash('md5');
-        md5hash.update(email);
-        return md5hash.digest('hex');
     }
 
     private async generateListId() {

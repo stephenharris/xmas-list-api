@@ -1,5 +1,6 @@
 import { Module, NestModule} from '@nestjs/common';
-import { ListItemsController } from './controllers/lists.controller';
+import { ListController } from './controllers/lists.controller';
+import { ItemsController } from './controllers/items.controller';
 import { FavouritesController } from './controllers/favourites.controller';
 import { ItemService } from './services/items.service';
 import { ConfigService } from '../config/services/config.service';
@@ -19,7 +20,7 @@ const dynamodbClientFactory = {
 
 @Module({
     imports: [ConfigModule],
-    controllers: [ListItemsController, FavouritesController],
+    controllers: [ListController, ItemsController, FavouritesController],
     providers: [
         ItemService,
         dynamodbClientFactory

@@ -17,7 +17,7 @@ ENV HOME=/home/node
 WORKDIR /home/node
 
 USER node
-COPY package.* /home/node/
+COPY package* /home/node/
 
 RUN npm install
 

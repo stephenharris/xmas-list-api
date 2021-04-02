@@ -56,6 +56,18 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 5
           WriteCapacityUnits: 5
+        GlobalSecondaryIndexes:
+          - IndexName: list_owner_index
+            KeySchema:
+              - AttributeName: sk
+                KeyType: HASH
+              - AttributeName: pk
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 5
+              WriteCapacityUnits: 5
         TableName: XmasList
         TimeToLiveSpecification:
           AttributeName: ttl
