@@ -20,7 +20,8 @@ describe('AuthenticationMiddleware', () => {
     let response = mockResponse({locals: {}});
 
     when(authService.authenticateToken).calledWith('J.W.T').mockReturnValue(Promise.resolve({
-      "list":"ABCD1234"
+      email: "john.smith@example.com", 
+      userUuid: "ad3fe0a1-dc06-49eb-aa40-00b01be33389"
     }));
 
     request.get.withArgs('Authorization').returns('Bearer J.W.T');
@@ -31,7 +32,7 @@ describe('AuthenticationMiddleware', () => {
       authMiddleware.use(request, response, ()=>resolve(response));
     });
     
-    expect(response.locals.authorizedUser).toEqual("ABCD1234");
+    expect(response.locals.authorizedUser).toEqual("ad3fe0a1-dc06-49eb-aa40-00b01be33389");
   });
 
 
