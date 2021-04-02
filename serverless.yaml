@@ -22,10 +22,11 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: 
-        Fn::Join: 
-          - ""
-          - - "Ref": "XmasListDynamoDBTable"
+      Resource:
+        - {"Fn::GetAtt": ["XmasListDynamoDBTable", "Arn" ]}
+        - Fn::Join: 
+          - "/"
+          - - {"Fn::GetAtt": ["XmasListDynamoDBTable", "Arn" ]}
             - "*"
     - Effect: Allow
       Action:
