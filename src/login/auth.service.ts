@@ -21,7 +21,7 @@ export class AuthService {
             console.log('Trying with Auth0');
             try {
                 var decoded = jwt.verify(token, await this.config.get('AUTH0_SECRET'));
-                let email = decoded['https://xmas.c7e.uk/email']
+                let email = decoded['https://c7e.uk/email']
                 let userUuid = await this.itemService.getOrCreateUserId(email);
                 return { email: email, userUuid: userUuid }
             } catch(err) {
