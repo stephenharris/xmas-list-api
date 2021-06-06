@@ -1,5 +1,5 @@
 # base image
-FROM node:10
+FROM node:14
 
 ARG HOST_USER_UID=1000
 ARG HOST_USER_GID=1000
