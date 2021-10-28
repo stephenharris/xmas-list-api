@@ -19,6 +19,19 @@ Deployment uses serverless. Following their documentation, ensure `.aws/credenti
     docker exec -it lists npm run deploy:prod
 
 
+## Running tests
+
+```
+docker exec -it lists npm run test
+```
+
+
+## Running test
+
+```
+docker exec -it lists npm run test:e2e
+```
+
 ## Table schema
 
 | primary (pk)        | secondary (sk)     | item          | ttl         | bought_by       | name            | uuid      |
