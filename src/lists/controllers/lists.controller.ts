@@ -64,7 +64,8 @@ export class ListController {
               return item;
             }),
             listId: listId,
-            name: list.name
+            name: list.name,
+            isOwner: ownsList
           }
         });
     } catch (error) {

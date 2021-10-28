@@ -110,4 +110,24 @@ describe('Managing lists', () => {
       .expect(403)
   })
 
+  it('List owner can see they own the list', () => {
+    return request(app.getHttpServer())
+      .get(`/list/${listId}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200)
+      .expect((resp) => {
+        expect(resp.body.isOwner).toEqual(true)
+      })
+  })
+  
+  it('User can see they do not own the list', () => {
+    return request(app.getHttpServer())
+      .get(`/list/${listId}`)
+      .set("Authorization", `Bearer ${otherUserAccessToken}`)
+      .expect(200)
+      .expect((resp) => {
+        expect(resp.body.isOwner).toEqual(false)
+      })
+  })
+
 });
