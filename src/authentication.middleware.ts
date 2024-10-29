@@ -10,7 +10,7 @@ export class AuthenticationMiddleware implements NestMiddleware {
 
   use(request: Request, response: Response, next: () => void) {
 
-    // cast as any to workaround 
+    // cast as any to workaround https://github.com/DefinitelyTyped/DefinitelyTyped/issues/40138
     let authHeader = (request as any).get('Authorization') || '';
     this.authService.authenticateToken(authHeader.replace("Bearer","").trim())
       .then((decoded) => {
