@@ -4,6 +4,12 @@ import { when } from 'jest-when';
 
 jest.mock('./login/auth.service');
 
+declare module 'express' {
+  interface Response{
+    locals: any
+  }
+}
+
 describe('AuthenticationMiddleware', () => {
 
   let authService;

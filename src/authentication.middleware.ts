@@ -10,7 +10,8 @@ export class AuthenticationMiddleware implements NestMiddleware {
 
   use(request: Request, response: Response, next: () => void) {
 
-    let authHeader = request.get('Authorization') || '';
+    // cast as any to workaround 
+    let authHeader = (request as any).get('Authorization') || '';
     this.authService.authenticateToken(authHeader.replace("Bearer","").trim())
       .then((decoded) => {
         response.locals.authorizedUser = decoded.userUuid;
